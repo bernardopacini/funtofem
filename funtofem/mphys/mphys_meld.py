@@ -38,7 +38,7 @@ class MeldDispXfer(om.ExplicitComponent):
                                     distributed=True,
                                     desc='initial structural node coordinates',
                                     tags=['mphys_coordinates'])
-        self.add_input('x_aero0_unmasked',   shape_by_conn=True,
+        self.add_input('x_aero0',   shape_by_conn=True,
                                     distributed=True,
                                     desc='initial aero surface node coordinates',
                                     tags=['mphys_coordinates'])
@@ -59,7 +59,7 @@ class MeldDispXfer(om.ExplicitComponent):
 
     def compute(self, inputs, outputs):
         x_s0 = np.array(inputs['x_struct0'],dtype=TransferScheme.dtype)
-        x_a0 = np.array(inputs['x_aero0_unmasked'],dtype=TransferScheme.dtype)
+        x_a0 = np.array(inputs['x_aero0'],dtype=TransferScheme.dtype)
         u_a  = np.array(outputs['u_aero'],dtype=TransferScheme.dtype)
 
         u_s  = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
@@ -87,7 +87,7 @@ class MeldDispXfer(om.ExplicitComponent):
         """
         if self.check_partials:
             x_s0 = np.array(inputs['x_struct0'],dtype=TransferScheme.dtype)
-            x_a0 = np.array(inputs['x_aero0_unmasked'],dtype=TransferScheme.dtype)
+            x_a0 = np.array(inputs['x_aero0'],dtype=TransferScheme.dtype)
             self.meld.setStructNodes(x_s0)
             self.meld.setAeroNodes(x_a0)
         u_s  = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
@@ -106,7 +106,7 @@ class MeldDispXfer(om.ExplicitComponent):
                     self.meld.applydDduS(d_in,prod)
                     d_outputs['u_aero'] -= np.array(prod,dtype=float)
 
-                if 'x_aero0_unmasked' in d_inputs:
+                if 'x_aero0' in d_inputs:
                     if self.check_partials:
                         pass
                     else:
@@ -129,10 +129,10 @@ class MeldDispXfer(om.ExplicitComponent):
                         d_inputs['u_struct'][i::self.struct_ndof] -= np.array(prod[i::3],dtype=np.float64)
 
                 # du_a/dx_a0^T * psi = - psi^T * dD/dx_a0 in F2F terminology
-                if 'x_aero0_unmasked' in d_inputs:
-                    prod = np.zeros(d_inputs['x_aero0_unmasked'].size,dtype=TransferScheme.dtype)
+                if 'x_aero0' in d_inputs:
+                    prod = np.zeros(d_inputs['x_aero0'].size,dtype=TransferScheme.dtype)
                     self.meld.applydDdxA0(du_a,prod)
-                    d_inputs['x_aero0_unmasked'] -= np.array(prod,dtype=float)
+                    d_inputs['x_aero0'] -= np.array(prod,dtype=float)
 
                 if 'x_struct0' in d_inputs:
                     prod = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
@@ -177,7 +177,7 @@ class MeldLoadXfer(om.ExplicitComponent):
                                     distributed=True,
                                     desc='initial structural node coordinates',
                                     tags=['mphys_coordinates'])
-        self.add_input('x_aero0_unmasked', shape_by_conn=True,
+        self.add_input('x_aero0', shape_by_conn=True,
                                   distributed=True,
                                   desc='initial aero surface node coordinates',
                                   tags=['mphys_coordinates'])
@@ -185,7 +185,7 @@ class MeldLoadXfer(om.ExplicitComponent):
                                    distributed=True,
                                    desc='structural node displacements',
                                    tags=['mphys_coupling'])
-        self.add_input('f_aero_unmasked', shape_by_conn=True,
+        self.add_input('f_aero', shape_by_conn=True,
                                  distributed=True,
                                  desc='aerodynamic force vector',
                                  tags=['mphys_coupling'])
@@ -202,16 +202,16 @@ class MeldLoadXfer(om.ExplicitComponent):
     def compute(self, inputs, outputs):
         if self.check_partials:
             x_s0 = np.array(inputs['x_struct0'],dtype=TransferScheme.dtype)
-            x_a0 = np.array(inputs['x_aero0_unmasked'],dtype=TransferScheme.dtype)
+            x_a0 = np.array(inputs['x_aero0'],dtype=TransferScheme.dtype)
             self.meld.setStructNodes(x_s0)
             self.meld.setAeroNodes(x_a0)
-        f_a =  np.array(inputs['f_aero_unmasked'],dtype=TransferScheme.dtype)
+        f_a =  np.array(inputs['f_aero'],dtype=TransferScheme.dtype)
         f_s = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
 
         u_s  = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
         for i in range(3):
             u_s[i::3] = inputs['u_struct'][i::self.struct_ndof]
-        u_a = np.zeros(inputs['f_aero_unmasked'].size,dtype=TransferScheme.dtype)
+        u_a = np.zeros(inputs['f_aero'].size,dtype=TransferScheme.dtype)
         self.meld.transferDisps(u_s,u_a)
 
         self.meld.transferLoads(f_a,f_s)
@@ -230,16 +230,16 @@ class MeldLoadXfer(om.ExplicitComponent):
         """
         if self.check_partials:
             x_s0 = np.array(inputs['x_struct0'],dtype=TransferScheme.dtype)
-            x_a0 = np.array(inputs['x_aero0_unmasked'],dtype=TransferScheme.dtype)
+            x_a0 = np.array(inputs['x_aero0'],dtype=TransferScheme.dtype)
             self.meld.setStructNodes(x_s0)
             self.meld.setAeroNodes(x_a0)
-        f_a =  np.array(inputs['f_aero_unmasked'],dtype=TransferScheme.dtype)
+        f_a =  np.array(inputs['f_aero'],dtype=TransferScheme.dtype)
         f_s = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
 
         u_s  = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
         for i in range(3):
             u_s[i::3] = inputs['u_struct'][i::self.struct_ndof]
-        u_a = np.zeros(inputs['f_aero_unmasked'].size,dtype=TransferScheme.dtype)
+        u_a = np.zeros(inputs['f_aero'].size,dtype=TransferScheme.dtype)
         self.meld.transferDisps(u_s,u_a)
         self.meld.transferLoads(f_a,f_s)
 
@@ -254,15 +254,15 @@ class MeldLoadXfer(om.ExplicitComponent):
                     for i in range(3):
                         d_outputs['f_struct'][i::self.struct_ndof] -= np.array(prod[i::3],dtype=float)
 
-                if 'f_aero_unmasked' in d_inputs:
+                if 'f_aero' in d_inputs:
                     # df_s/df_a psi = - dL/df_a * psi = -dD/du_s^T * psi
                     prod = np.zeros(self.struct_nnodes*3,dtype=TransferScheme.dtype)
-                    df_a = np.array(d_inputs['f_aero_unmasked'],dtype=TransferScheme.dtype)
+                    df_a = np.array(d_inputs['f_aero'],dtype=TransferScheme.dtype)
                     self.meld.applydDduSTrans(df_a,prod)
                     for i in range(3):
                         d_outputs['f_struct'][i::self.struct_ndof] -= np.array(prod[i::3],dtype=float)
 
-                if 'x_aero0_unmasked' in d_inputs:
+                if 'x_aero0' in d_inputs:
                     if self.check_partials:
                         pass
                     else:
@@ -288,17 +288,17 @@ class MeldLoadXfer(om.ExplicitComponent):
                     for i in range(3):
                         d_inputs['u_struct'][i::self.struct_ndof] -= np.array(d_in[i::3],dtype=float)
 
-                if 'f_aero_unmasked' in d_inputs:
+                if 'f_aero' in d_inputs:
                     # df_s/df_a^T psi = - dL/df_a^T * psi = -dD/du_s * psi
                     prod = np.zeros(self.aero_nnodes*3,dtype=TransferScheme.dtype)
                     self.meld.applydDduS(d_out,prod)
-                    d_inputs['f_aero_unmasked'] -= np.array(prod,dtype=float)
+                    d_inputs['f_aero'] -= np.array(prod,dtype=float)
 
-                if 'x_aero0_unmasked' in d_inputs:
+                if 'x_aero0' in d_inputs:
                     # df_s/dx_a0^T * psi = - psi^T * dL/dx_a0 in F2F terminology
                     prod = np.zeros(self.aero_nnodes*3,dtype=TransferScheme.dtype)
                     self.meld.applydLdxA0(d_out,prod)
-                    d_inputs['x_aero0_unmasked'] -= np.array(prod,dtype=float)
+                    d_inputs['x_aero0'] -= np.array(prod,dtype=float)
 
                 if 'x_struct0' in d_inputs:
                     # df_s/dx_s0^T * psi = - psi^T * dL/dx_s0 in F2F terminology
@@ -317,10 +317,7 @@ class MeldBuilder(Builder):
         self.check_partials = check_partials
 
     def initialize(self, comm):
-        if comm.rank == 0:
-            self.nnodes_aero = self.aero_builder.get_number_of_nodes() + 5
-        else:
-            self.nnodes_aero = self.aero_builder.get_number_of_nodes()
+        self.nnodes_aero = self.aero_builder.get_number_of_nodes()
         self.nnodes_struct = self.struct_builder.get_number_of_nodes()
         self.ndof_struct = self.struct_builder.get_ndof()
 
